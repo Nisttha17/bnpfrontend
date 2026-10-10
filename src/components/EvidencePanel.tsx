@@ -6,8 +6,74 @@ import {
   AlertTriangle,
   FileCode,
 } from 'lucide-react';
-import { ChangeRequest, Regulation } from '../types';
-import { getViolationEvidence } from '../data/mockData';
+import { ChangeRequest } from '../types';
+
+export type Regulation = 'EMIR' | 'UKEMIR' | 'ASIC' | 'MAS' | 'HKMA';
+
+export interface ViolationEvidence {
+  regulation: Regulation;
+  document: string;
+  clause: string;
+  page: number;
+  quote: string;
+  impact: string;
+}
+
+const REGULATION_EVIDENCE_MAP: Record<Regulation, {
+  document: string;
+  clause: string;
+  page: number;
+  quote: string;
+  impact: string;
+}> = {
+  EMIR: {
+    document: 'ESMA RTS 22 / EMIR Refit – Article 9.1',
+    clause: '“Mandatory Reporting & Field Format Alignment”',
+    page: 24,
+    quote: '“Counterparties and CCPs shall ensure that the details of any derivative contract are reported without duplication, conforming strictly to the prescribed technical XML schema format.”',
+    impact: 'Proposed change alters mandatory reporting fields, creating schema validation failures and reconciliation mismatches in EMIR trade repositories.',
+  },
+  UKEMIR: {
+    document: 'Bank of England & FCA Policy Statement PS23/2',
+    clause: '“Annex B – Trade State & Clock Traceability”',
+    page: 18,
+    quote: '“Reporting entities must adhere to Bank of England validation rules and clock synchronization tolerances. Non-conforming payloads shall be rejected at the gateway.”',
+    impact: 'Fails UK EMIR post-Brexit bilateral reconciliation rules. Downstream UK trade repository gateways will reject modified messages.',
+  },
+  ASIC: {
+    document: 'ASIC Derivative Transaction Rules (Reporting) 2024',
+    clause: '“Rule 2.2.8 – Record Keeping & Unique Identifiers”',
+    page: 41,
+    quote: '“Reporting entities shall maintain synchronous timestamps and adhere to designated UTI/UPI character length limits without unauthorized custom field truncations.”',
+    impact: 'Conflicts with ASIC transaction reporting standards. Field structure changes breach character length and validation guidelines.',
+  },
+  MAS: {
+    document: 'MAS Notice 610 / Securities & Futures Regulations',
+    clause: '“Regulation 7 – Derivative Contracts Verification”',
+    page: 32,
+    quote: '“Specified persons shall submit verified counterparty LEI and execution timestamp data within prescribed T+1 reporting deadlines with exact jurisdictional classification.”',
+    impact: 'Violates MAS reporting accuracy thresholds and field taxonomy rules. Counterparty mapping is non-compliant.',
+  },
+  HKMA: {
+    document: 'HKMA Supplementary Guidance on OTC Derivatives Reporting',
+    clause: '“Section 3.4 – Mandatory Clearing & Intermediary Mapping”',
+    page: 55,
+    quote: '“Reporting entities must ensure full consistency in trade party classification according to HKMA trade repository validation filters.”',
+    impact: 'Non-compliant with HKMA TR format validation filters and trade categorization rules for this change request.',
+  },
+};
+
+export function getViolationEvidence(cr: ChangeRequest, reg: Regulation): ViolationEvidence {
+  const base = REGULATION_EVIDENCE_MAP[reg] || REGULATION_EVIDENCE_MAP.EMIR;
+  return {
+    regulation: reg,
+    document: base.document,
+    clause: base.clause,
+    page: base.page,
+    quote: base.quote,
+    impact: `${base.impact} (Target: ${cr.srNo} - ${cr.description})`,
+  };
+}
 
 interface EvidencePanelProps {
   request: ChangeRequest;
@@ -33,7 +99,7 @@ export const EvidencePanel: React.FC<EvidencePanelProps> = ({
   const isApproved = request.status === 'Completed';
   const isRejected = request.status === 'Needs Review' || request.status === 'Rejected';
 
-  // Get evidence for the active violated regulation
+  // Retrieve structured evidence for the active violated regulation
   const evidence = getViolationEvidence(request, activeViolation);
 
   return (
@@ -61,7 +127,7 @@ export const EvidencePanel: React.FC<EvidencePanelProps> = ({
             )}
           </div>
 
-          {/* Violated Regulations Selector */}
+          {/* Violated Regulations Selector Tabs */}
           {violations.length > 0 && (
             <div className="flex items-center gap-1.5 mt-2.5 flex-wrap">
               <span className="text-[11px] font-semibold text-slate-500">
