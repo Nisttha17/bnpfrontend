@@ -18,13 +18,12 @@ import { NotificationsModal } from './components/NotificationsModal';
 import { HistoryView } from './components/HistoryView';
 import {
   initialMetrics,
-  defaultMatrixRows,
   initialChangeRequests,
   initialAssessments,
   mockNotifications,
 } from './data/mockData';
-import { ChangeRequest, MetricSummary, AssessmentItem, JurisdictionMatrixRow } from './types';
-import { Menu, CheckCircle2, AlertCircle } from 'lucide-react';
+import { ChangeRequest, MetricSummary, AssessmentItem } from './types';
+import { Menu, CheckCircle2 } from 'lucide-react';
 
 export default function App() {
   // Navigation State
@@ -35,13 +34,11 @@ export default function App() {
   const [metrics, setMetrics] = useState<MetricSummary>(initialMetrics);
   const [requests, setRequests] = useState<ChangeRequest[]>(initialChangeRequests);
   const [assessments, setAssessments] = useState<AssessmentItem[]>(initialAssessments);
-  const [matrixRows, setMatrixRows] = useState<JurisdictionMatrixRow[]>(defaultMatrixRows);
   const [notifications, setNotifications] = useState(mockNotifications);
 
   // Selection & Filter States
   const [selectedRequestId, setSelectedRequestId] = useState<string>('CR-001');
   const [searchTerm, setSearchTerm] = useState<string>('');
-  const [complexityFilter, setComplexityFilter] = useState<string>('All');
 
   // Modals & Panel States
   const [isNewModalOpen, setIsNewModalOpen] = useState<boolean>(false);
@@ -50,7 +47,7 @@ export default function App() {
   const [isNotificationsOpen, setIsNotificationsOpen] = useState<boolean>(false);
   const [isEvidencePanelVisible, setIsEvidencePanelVisible] = useState<boolean>(true);
   const [pdfDocData, setPdfDocData] = useState<{ title: string; page: number }>({
-    title: 'ESMA Guidelines – Article 12.3',
+    title: 'ESMA RTS 25 / ASIC CP 334 – Clause 4.2',
     page: 24,
   });
 
@@ -69,48 +66,20 @@ export default function App() {
     return requests.find((r) => r.id === selectedRequestId) || requests[0];
   }, [requests, selectedRequestId]);
 
-  // Filter requests based on search and complexity
+  // Filter requests based on search
   const filteredRequests = useMemo(() => {
     return requests.filter((r) => {
-      const matchesSearch =
+      return (
         r.srNo.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        r.description.toLowerCase().includes(searchTerm.toLowerCase());
-      const matchesComplexity =
-        complexityFilter === 'All' || r.complexity === complexityFilter;
-      return matchesSearch && matchesComplexity;
+        r.description.toLowerCase().includes(searchTerm.toLowerCase())
+      );
     });
-  }, [requests, searchTerm, complexityFilter]);
+  }, [requests, searchTerm]);
 
   // Handler: Selecting a Change Request
   const handleSelectRequest = (request: ChangeRequest) => {
     setSelectedRequestId(request.id);
     setIsEvidencePanelVisible(true);
-
-    // If request has specific matrix variations, dynamically adapt:
-    if (request.id === 'CR-002') {
-      setMatrixRows([
-        { jurisdiction: 'EU', mifid: 'Conflict', emir: 'Clear', sftr: 'Clear', doddFrank: 'Conflict', ukFca: 'Clear', mas: 'Clear' },
-        { jurisdiction: 'UK', mifid: 'Conflict', emir: 'Clear', sftr: 'Clear', doddFrank: 'Review', ukFca: 'Clear', mas: 'Clear' },
-        { jurisdiction: 'US', mifid: 'Clear', emir: 'Clear', sftr: 'Clear', doddFrank: 'Clear', ukFca: 'Clear', mas: 'Clear' },
-        { jurisdiction: 'Singapore', mifid: 'Clear', emir: 'Clear', sftr: 'Clear', doddFrank: 'Clear', ukFca: 'Clear', mas: 'Clear' },
-      ]);
-    } else if (request.id === 'CR-003') {
-      setMatrixRows([
-        { jurisdiction: 'EU', mifid: 'Clear', emir: 'Clear', sftr: 'Clear', doddFrank: 'Conflict', ukFca: 'Clear', mas: 'Clear' },
-        { jurisdiction: 'UK', mifid: 'Clear', emir: 'Clear', sftr: 'Clear', doddFrank: 'Review', ukFca: 'Clear', mas: 'Clear' },
-        { jurisdiction: 'US', mifid: 'Clear', emir: 'Review', sftr: 'Clear', doddFrank: 'Conflict', ukFca: 'Clear', mas: 'Clear' },
-        { jurisdiction: 'Singapore', mifid: 'Clear', emir: 'Clear', sftr: 'Clear', doddFrank: 'Clear', ukFca: 'Clear', mas: 'Clear' },
-      ]);
-    } else if (request.id === 'CR-004') {
-      setMatrixRows([
-        { jurisdiction: 'EU', mifid: 'Clear', emir: 'Clear', sftr: 'Review', doddFrank: 'Clear', ukFca: 'Clear', mas: 'Clear' },
-        { jurisdiction: 'UK', mifid: 'Clear', emir: 'Clear', sftr: 'Clear', doddFrank: 'Clear', ukFca: 'Review', mas: 'Clear' },
-        { jurisdiction: 'US', mifid: 'Clear', emir: 'Clear', sftr: 'Clear', doddFrank: 'Clear', ukFca: 'Clear', mas: 'Clear' },
-        { jurisdiction: 'Singapore', mifid: 'Clear', emir: 'Clear', sftr: 'Clear', doddFrank: 'Clear', ukFca: 'Clear', mas: 'Review' },
-      ]);
-    } else {
-      setMatrixRows(defaultMatrixRows);
-    }
   };
 
   // Handler: Approve Request
@@ -121,7 +90,7 @@ export default function App() {
           ? {
               ...r,
               status: 'Completed',
-              recommendation: 'Approved by Analyst. Production implementation authorized.',
+              recommendation: 'Approved by Analyst. Regulatory impact verified across EMIR, UKEMIR, ASIC, MAS, HKMA.',
             }
           : r
       )
@@ -139,7 +108,7 @@ export default function App() {
         }),
         requestId: reqId,
         status: 'Completed',
-        summary: 'Analyst approval recorded. Verified compliant.',
+        summary: 'Analyst approval recorded. Verified against cross-border reporting rules.',
       },
       ...prev,
     ]);
@@ -169,7 +138,7 @@ export default function App() {
     showToast(`Status updated: ${reqId} set to Needs Review.`);
   };
 
-  // Handler: Add New Request
+  // Handler: Add New Request (Complexity-free)
   const handleAddRequest = (newReq: ChangeRequest) => {
     setRequests((prev) => [newReq, ...prev]);
     setSelectedRequestId(newReq.id);
@@ -178,7 +147,7 @@ export default function App() {
       totalChangeRequests: prev.totalChangeRequests + 1,
       needsHumanReview: prev.needsHumanReview + 1,
     }));
-    showToast(`New change request ${newReq.id} created and queued for impact audit.`);
+    showToast(`New change request ${newReq.id} created and mapped to Regulatory Impact Heatmap.`);
   };
 
   // Handler: Run Assessment Complete
@@ -195,7 +164,7 @@ export default function App() {
         }),
         requestId: reqId,
         status: 'Completed',
-        summary: 'Automated 6-jurisdiction scan completed. 0 fatal blockers.',
+        summary: 'Automated 5-regime scan completed (EMIR, UKEMIR, ASIC, MAS, HKMA).',
       },
       ...prev,
     ]);
@@ -205,7 +174,7 @@ export default function App() {
       regulationsChecked: prev.regulationsChecked + 1,
     }));
 
-    showToast(`Regulatory scan completed for ${reqId}. Matrix updated.`);
+    showToast(`Regulatory scan completed for ${reqId}. Heatmap updated.`);
   };
 
   // Open PDF Modal
@@ -285,12 +254,30 @@ export default function App() {
                 setActiveTab('dashboard');
               }}
             />
+          ) : activeTab === 'matrix' ? (
+            /* Dedicated Full-Width Regulatory Impact Heatmap View */
+            <div className="space-y-6 animate-fadeIn">
+              <ImpactMatrix
+                requests={requests}
+                selectedRequestId={selectedRequestId}
+                onSelectRequest={handleSelectRequest}
+              />
+              {/* Evidence Panel below in full matrix view */}
+              <div className="max-w-2xl">
+                <EvidencePanel
+                  request={selectedRequest}
+                  onApprove={handleApproveRequest}
+                  onReject={handleRejectRequest}
+                  onOpenPdf={handleOpenPdf}
+                />
+              </div>
+            </div>
           ) : (
             <>
               {/* 1. Summary Metric Cards Row */}
               <SummaryCards metrics={metrics} />
 
-              {/* 2. Change Requests Table */}
+              {/* 2. Change Requests Table (Complexity Removed) */}
               <ChangeRequestsTable
                 requests={filteredRequests}
                 selectedRequestId={selectedRequestId}
@@ -298,11 +285,9 @@ export default function App() {
                 onOpenNewModal={() => setIsNewModalOpen(true)}
                 searchTerm={searchTerm}
                 setSearchTerm={setSearchTerm}
-                complexityFilter={complexityFilter}
-                setComplexityFilter={setComplexityFilter}
               />
 
-              {/* 3. Bottom Section: Regulatory Impact Matrix + Recent Assessments + Evidence Panel */}
+              {/* 3. Bottom Section: Regulatory Impact Heatmap + Recent Assessments + Evidence Panel */}
               <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
                 {/* Left Column (approx 8 columns on large screens) */}
                 <div
@@ -310,10 +295,11 @@ export default function App() {
                     isEvidencePanelVisible ? 'lg:col-span-8' : 'lg:col-span-12'
                   } space-y-6`}
                 >
-                  {/* Regulatory Impact Matrix */}
+                  {/* Updated Regulatory Impact Heatmap matching reference image */}
                   <ImpactMatrix
-                    rows={matrixRows}
-                    selectedRequestSrNo={selectedRequest.srNo}
+                    requests={requests}
+                    selectedRequestId={selectedRequestId}
+                    onSelectRequest={handleSelectRequest}
                   />
 
                   {/* Recent Assessments */}
@@ -329,7 +315,7 @@ export default function App() {
 
                 {/* Right Column: Evidence & Recommendations Panel */}
                 {isEvidencePanelVisible && (
-                  <div className="lg:col-span-4 h-full">
+                  <div className="lg:col-span-4 h-full sticky top-4">
                     <EvidencePanel
                       request={selectedRequest}
                       onApprove={handleApproveRequest}

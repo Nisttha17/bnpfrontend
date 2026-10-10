@@ -1,155 +1,140 @@
-import React, { useState } from 'react';
-import { LayoutGrid, Info } from 'lucide-react';
-import { ComplianceStatus, JurisdictionMatrixRow } from '../types';
+import React from 'react';
+import { ChangeRequest } from '../types';
 
 interface ImpactMatrixProps {
-  rows: JurisdictionMatrixRow[];
-  selectedRequestSrNo: string;
+  requests: ChangeRequest[];
+  selectedRequestId: string;
+  onSelectRequest: (request: ChangeRequest) => void;
+  onSelectCellRegulation?: (request: ChangeRequest, regulation: string) => void;
 }
 
 export const ImpactMatrix: React.FC<ImpactMatrixProps> = ({
-  rows,
-  selectedRequestSrNo,
+  requests,
+  selectedRequestId,
+  onSelectRequest,
 }) => {
-  const [activeCellInfo, setActiveCellInfo] = useState<{
-    jurisdiction: string;
-    regulation: string;
-    status: ComplianceStatus;
-  } | null>(null);
-
-  const renderBadge = (status: ComplianceStatus, jurisdiction: string, regulation: string) => {
-    let classes = '';
-    let label = status;
-
-    switch (status) {
-      case 'Conflict':
-        classes = 'bg-red-100 text-red-700 border-red-200';
-        break;
-      case 'Review':
-        classes = 'bg-amber-100 text-amber-700 border-amber-200';
-        break;
-      case 'Clear':
-        classes = 'bg-emerald-100 text-emerald-700 border-emerald-200';
-        break;
-    }
-
-    return (
-      <button
-        onClick={() => setActiveCellInfo({ jurisdiction, regulation, status })}
-        className={`w-full py-1.5 px-2 rounded-md font-medium text-xs text-center transition-all hover:scale-[1.02] cursor-pointer ${classes}`}
-        title={`Click to inspect ${jurisdiction} - ${regulation} (${status})`}
-      >
-        {label}
-      </button>
-    );
-  };
+  const regulations: Array<'EMIR' | 'UKEMIR' | 'ASIC' | 'MAS' | 'HKMA'> = [
+    'EMIR',
+    'UKEMIR',
+    'ASIC',
+    'MAS',
+    'HKMA',
+  ];
 
   return (
-    <div className="bg-white rounded-xl border border-slate-100 shadow-xs mb-6 overflow-hidden">
-      {/* Header */}
-      <div className="p-4 sm:p-5 flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-slate-100">
-        <div className="flex items-center gap-3">
-          <div className="w-8 h-8 rounded-lg bg-blue-50 text-blue-600 flex items-center justify-center shrink-0">
-            <LayoutGrid className="w-4 h-4" />
+    <div className="bg-white rounded-2xl border border-slate-200/80 shadow-xs p-5 sm:p-6 mb-6">
+      {/* Header & Legend */}
+      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-6">
+        {/* Left: Interconnected Molecular / Network Icon + Title */}
+        <div className="flex items-center gap-3.5">
+          <div className="w-10 h-10 text-blue-600 shrink-0">
+            <svg viewBox="0 0 42 42" fill="none" className="w-full h-full">
+              {/* Interconnected network nodes */}
+              <circle cx="21" cy="14" r="5" fill="#2563eb" />
+              <circle cx="10" cy="29" r="4.5" fill="#3b82f6" />
+              <circle cx="34" cy="26" r="4.5" fill="#1d4ed8" />
+              <circle cx="8" cy="12" r="3" fill="#60a5fa" />
+              <line x1="21" y1="14" x2="10" y2="29" stroke="#3b82f6" strokeWidth="2.2" />
+              <line x1="21" y1="14" x2="34" y2="26" stroke="#2563eb" strokeWidth="2.2" />
+              <line x1="21" y1="14" x2="8" y2="12" stroke="#60a5fa" strokeWidth="2" />
+              <line x1="10" y1="29" x2="34" y2="26" stroke="#93c5fd" strokeWidth="1.5" />
+            </svg>
           </div>
           <div>
-            <h2 className="text-base font-bold text-[#0c1538]">
-              Regulatory Impact Matrix
+            <h2 className="text-xl sm:text-2xl font-bold text-[#0c1b48] tracking-tight">
+              IMPART – Regulatory Impact Heatmap
             </h2>
-            <p className="text-xs text-slate-500">
-              View compliance status across jurisdictions for the selected change request ({selectedRequestSrNo}).
+            <p className="text-xs sm:text-sm text-slate-500 font-normal mt-0.5">
+              Track which Change Requests (CRs) impact which regulations, with clear evidence and source references.
             </p>
           </div>
         </div>
 
-        {/* Legend */}
-        <div className="flex items-center gap-4 text-xs font-medium text-slate-700">
-          <div className="flex items-center gap-1.5">
-            <span className="w-2.5 h-2.5 rounded-full bg-red-500 inline-block" />
-            <span>Conflict</span>
+        {/* Right: Legend */}
+        <div className="flex items-center gap-4 bg-white border border-slate-200 rounded-xl px-4 py-2 self-start md:self-auto shadow-2xs">
+          <div className="flex items-center gap-2">
+            <span className="w-4 h-4 rounded-xs bg-[#d1fae5] border border-[#10b981] inline-block shrink-0" />
+            <span className="text-xs font-semibold text-slate-800">YES = Impact</span>
           </div>
-          <div className="flex items-center gap-1.5">
-            <span className="w-2.5 h-2.5 rounded-full bg-amber-500 inline-block" />
-            <span>Needs Review</span>
-          </div>
-          <div className="flex items-center gap-1.5">
-            <span className="w-2.5 h-2.5 rounded-full bg-emerald-500 inline-block" />
-            <span>Clear</span>
+          <div className="flex items-center gap-2">
+            <span className="w-4 h-4 rounded-xs bg-[#fee2e2] border border-[#f87171] inline-block shrink-0" />
+            <span className="text-xs font-semibold text-slate-800">NO = No impact</span>
           </div>
         </div>
       </div>
 
-      {/* Matrix Table */}
-      <div className="overflow-x-auto p-2 sm:p-4">
-        <table className="w-full text-left border-separate border-spacing-2">
+      {/* Heatmap Table */}
+      <div className="overflow-x-auto">
+        <table className="w-full text-left border-separate border-spacing-y-2.5 border-spacing-x-2">
           <thead>
-            <tr className="text-xs font-semibold text-slate-800">
-              <th className="py-2 px-3 text-slate-800 font-bold w-28">Jurisdiction</th>
-              <th className="py-2 px-2 text-center font-bold">MiFID II</th>
-              <th className="py-2 px-2 text-center font-bold">EMIR</th>
-              <th className="py-2 px-2 text-center font-bold">SFTR</th>
-              <th className="py-2 px-2 text-center font-bold">Dodd-Frank</th>
-              <th className="py-2 px-2 text-center font-bold">UK FCA</th>
-              <th className="py-2 px-2 text-center font-bold">MAS</th>
+            <tr className="text-xs sm:text-sm font-bold text-[#0c1538]">
+              <th className="py-2.5 px-3 w-64 md:w-80">Change Request (CR)</th>
+              <th className="py-2.5 px-2 text-center w-28">EMIR</th>
+              <th className="py-2.5 px-2 text-center w-28">UKEMIR</th>
+              <th className="py-2.5 px-2 text-center w-28">ASIC</th>
+              <th className="py-2.5 px-2 text-center w-28">MAS</th>
+              <th className="py-2.5 px-2 text-center w-28">HKMA</th>
             </tr>
           </thead>
           <tbody>
-            {rows.map((row) => (
-              <tr key={row.jurisdiction}>
-                <td className="py-2 px-3 text-xs font-semibold text-[#0c1538]">
-                  {row.jurisdiction}
-                </td>
-                <td className="p-1">
-                  {renderBadge(row.mifid, row.jurisdiction, 'MiFID II')}
-                </td>
-                <td className="p-1">
-                  {renderBadge(row.emir, row.jurisdiction, 'EMIR')}
-                </td>
-                <td className="p-1">
-                  {renderBadge(row.sftr, row.jurisdiction, 'SFTR')}
-                </td>
-                <td className="p-1">
-                  {renderBadge(row.doddFrank, row.jurisdiction, 'Dodd-Frank')}
-                </td>
-                <td className="p-1">
-                  {renderBadge(row.ukFca, row.jurisdiction, 'UK FCA')}
-                </td>
-                <td className="p-1">
-                  {renderBadge(row.mas, row.jurisdiction, 'MAS')}
-                </td>
-              </tr>
-            ))}
+            {requests.map((req) => {
+              const isSelected = req.id === selectedRequestId;
+              return (
+                <tr
+                  key={req.id}
+                  onClick={() => onSelectRequest(req)}
+                  className={`cursor-pointer transition-all ${
+                    isSelected ? 'bg-blue-50/50 rounded-xl' : 'hover:bg-slate-50/60'
+                  }`}
+                >
+                  {/* CR Column: ID and Description */}
+                  <td className="py-2.5 px-3">
+                    <p className="font-bold text-sm text-[#0c1538] flex items-center gap-2">
+                      {isSelected && (
+                        <span className="w-1.5 h-3.5 bg-blue-600 rounded-full inline-block" />
+                      )}
+                      <span>{req.srNo}</span>
+                    </p>
+                    <p className="text-xs text-slate-500 font-normal mt-0.5 line-clamp-1">
+                      {req.description}
+                    </p>
+                  </td>
+
+                  {/* Regulation YES / NO Cells */}
+                  {regulations.map((reg) => {
+                    const impact = req.regulatoryImpacts?.[reg] || 'NO';
+                    const isYes = impact === 'YES';
+
+                    return (
+                      <td key={reg} className="p-0.5 text-center">
+                        <button
+                          type="button"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            onSelectRequest(req);
+                          }}
+                          className={`w-full py-2.5 sm:py-3 px-2 rounded-xl font-bold text-xs tracking-wider transition-transform hover:scale-[1.02] cursor-pointer text-center block ${
+                            isYes
+                              ? 'bg-[#d1fae5] text-[#065f46] border border-emerald-200/60'
+                              : 'bg-[#fee2e2] text-[#991b1b] border border-red-200/60'
+                          }`}
+                        >
+                          {impact}
+                        </button>
+                      </td>
+                    );
+                  })}
+                </tr>
+              );
+            })}
           </tbody>
         </table>
       </div>
 
-      {/* Active Cell Inspector Banner (When Analyst Clicks a Cell) */}
-      {activeCellInfo && (
-        <div className="mx-4 mb-4 p-3 rounded-lg bg-slate-50 border border-slate-200 text-xs flex items-center justify-between animate-fadeIn">
-          <div className="flex items-center gap-2">
-            <Info className="w-4 h-4 text-blue-600 shrink-0" />
-            <span className="text-slate-700">
-              <strong>{activeCellInfo.jurisdiction} · {activeCellInfo.regulation}</strong> evaluated as{' '}
-              <span className={`font-semibold ${
-                activeCellInfo.status === 'Conflict'
-                  ? 'text-red-600'
-                  : activeCellInfo.status === 'Review'
-                  ? 'text-amber-600'
-                  : 'text-emerald-600'
-              }`}>
-                {activeCellInfo.status}
-              </span>{' '}
-              under cross-border rule parity algorithms.
-            </span>
-          </div>
-          <button
-            onClick={() => setActiveCellInfo(null)}
-            className="text-slate-400 hover:text-slate-600 text-xs font-semibold px-2 py-0.5"
-          >
-            Dismiss
-          </button>
-        </div>
-      )}
+      {/* Footer Note matching reference image */}
+      <p className="text-xs italic text-slate-400 mt-4 font-normal">
+        Illustrative sample data — not actual regulatory conclusions.
+      </p>
     </div>
   );
 };

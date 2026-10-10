@@ -1,6 +1,6 @@
 import React from 'react';
-import { Search, ChevronDown, FileSpreadsheet } from 'lucide-react';
-import { ChangeRequest, ComplexityLevel } from '../types';
+import { Search, FileSpreadsheet } from 'lucide-react';
+import { ChangeRequest } from '../types';
 
 interface ChangeRequestsTableProps {
   requests: ChangeRequest[];
@@ -9,8 +9,8 @@ interface ChangeRequestsTableProps {
   onOpenNewModal: () => void;
   searchTerm: string;
   setSearchTerm: (term: string) => void;
-  complexityFilter: string;
-  setComplexityFilter: (filter: string) => void;
+  statusFilter?: string;
+  setStatusFilter?: (filter: string) => void;
 }
 
 export const ChangeRequestsTable: React.FC<ChangeRequestsTableProps> = ({
@@ -20,38 +20,7 @@ export const ChangeRequestsTable: React.FC<ChangeRequestsTableProps> = ({
   onOpenNewModal,
   searchTerm,
   setSearchTerm,
-  complexityFilter,
-  setComplexityFilter,
 }) => {
-  const getComplexityBadge = (complexity: ComplexityLevel) => {
-    switch (complexity) {
-      case 'Basic':
-        return (
-          <span className="bg-blue-100 text-blue-700 font-medium px-3 py-0.5 rounded-full text-xs inline-block">
-            Basic
-          </span>
-        );
-      case 'Medium':
-        return (
-          <span className="bg-amber-100 text-amber-700 font-medium px-3 py-0.5 rounded-full text-xs inline-block">
-            Medium
-          </span>
-        );
-      case 'Advanced':
-        return (
-          <span className="bg-purple-100 text-purple-700 font-medium px-3 py-0.5 rounded-full text-xs inline-block">
-            Advanced
-          </span>
-        );
-      default:
-        return (
-          <span className="bg-slate-100 text-slate-600 font-medium px-3 py-0.5 rounded-full text-xs inline-block">
-            {complexity}
-          </span>
-        );
-    }
-  };
-
   const getStatusBadge = (status: string) => {
     switch (status) {
       case 'Completed':
@@ -112,7 +81,7 @@ export const ChangeRequestsTable: React.FC<ChangeRequestsTableProps> = ({
         {/* Filter Controls */}
         <div className="flex flex-wrap items-center gap-2.5">
           {/* Search Input */}
-          <div className="relative min-w-[240px] sm:w-64">
+          <div className="relative min-w-[240px] sm:w-72">
             <Search className="w-3.5 h-3.5 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none" />
             <input
               type="text"
@@ -121,21 +90,6 @@ export const ChangeRequestsTable: React.FC<ChangeRequestsTableProps> = ({
               placeholder="Search by request ID or description..."
               className="w-full pl-9 pr-3 py-1.5 text-xs rounded-lg border border-slate-200 bg-white placeholder-slate-400 focus:outline-hidden focus:border-blue-500 focus:ring-1 focus:ring-blue-500 transition-colors"
             />
-          </div>
-
-          {/* Complexity Filter Dropdown */}
-          <div className="relative">
-            <select
-              value={complexityFilter}
-              onChange={(e) => setComplexityFilter(e.target.value)}
-              className="appearance-none pl-3 pr-8 py-1.5 text-xs rounded-lg border border-slate-200 bg-white text-slate-700 font-medium focus:outline-hidden focus:border-blue-500 cursor-pointer shadow-2xs"
-            >
-              <option value="All">All Complexities</option>
-              <option value="Basic">Basic</option>
-              <option value="Medium">Medium</option>
-              <option value="Advanced">Advanced</option>
-            </select>
-            <ChevronDown className="w-3.5 h-3.5 text-slate-500 absolute right-2.5 top-1/2 -translate-y-1/2 pointer-events-none" />
           </div>
 
           {/* New Request Button */}
@@ -148,23 +102,22 @@ export const ChangeRequestsTable: React.FC<ChangeRequestsTableProps> = ({
         </div>
       </div>
 
-      {/* Table Content */}
+      {/* Table Content (Complexity Column Removed) */}
       <div className="overflow-x-auto">
         <table className="w-full text-left border-collapse">
           <thead>
             <tr className="border-b border-slate-100 text-[11px] font-semibold text-slate-700">
-              <th className="py-3 px-4 w-24">Sr. No.</th>
-              <th className="py-3 px-4 w-28">Complexity</th>
+              <th className="py-3 px-4 w-28">Sr. No.</th>
               <th className="py-3 px-4">Change Request</th>
-              <th className="py-3 px-4 w-32">Status</th>
-              <th className="py-3 px-4 w-32">Date</th>
+              <th className="py-3 px-4 w-36">Status</th>
+              <th className="py-3 px-4 w-36">Date</th>
               <th className="py-3 px-4 w-20 text-right"></th>
             </tr>
           </thead>
           <tbody className="divide-y divide-slate-100 text-xs">
             {requests.length === 0 ? (
               <tr>
-                <td colSpan={6} className="py-8 text-center text-slate-400 text-xs">
+                <td colSpan={5} className="py-8 text-center text-slate-400 text-xs">
                   No matching change requests found.
                 </td>
               </tr>
@@ -186,7 +139,6 @@ export const ChangeRequestsTable: React.FC<ChangeRequestsTableProps> = ({
                       )}
                       {req.srNo}
                     </td>
-                    <td className="py-3.5 px-4">{getComplexityBadge(req.complexity)}</td>
                     <td className="py-3.5 px-4 text-slate-800 font-normal pr-6">
                       <p className="truncate max-w-xl">{req.description}</p>
                     </td>

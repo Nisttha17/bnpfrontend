@@ -1,11 +1,20 @@
 export type ComplexityLevel = 'Basic' | 'Medium' | 'Advanced';
 export type RequestStatus = 'Completed' | 'In Progress' | 'Pending' | 'Needs Review' | 'Rejected';
 export type ComplianceStatus = 'Conflict' | 'Review' | 'Clear';
+export type ImpactDecision = 'YES' | 'NO';
+
+export interface RegulatoryImpactMap {
+  EMIR: ImpactDecision;
+  UKEMIR: ImpactDecision;
+  ASIC: ImpactDecision;
+  MAS: ImpactDecision;
+  HKMA: ImpactDecision;
+}
 
 export interface ChangeRequest {
   id: string; // e.g. "CR-001"
   srNo: string;
-  complexity: ComplexityLevel;
+  complexity?: ComplexityLevel;
   description: string;
   status: RequestStatus;
   date: string;
@@ -15,6 +24,7 @@ export interface ChangeRequest {
   relevantClause?: string;
   impactExplanation?: string;
   recommendation?: string;
+  regulatoryImpacts?: RegulatoryImpactMap;
   matrixData?: Record<string, Record<string, ComplianceStatus>>;
 }
 

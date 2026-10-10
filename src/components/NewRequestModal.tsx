@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { X, PlusCircle } from 'lucide-react';
-import { ChangeRequest, ComplexityLevel } from '../types';
+import { ChangeRequest } from '../types';
 
 interface NewRequestModalProps {
   isOpen: boolean;
@@ -16,8 +16,7 @@ export const NewRequestModal: React.FC<NewRequestModalProps> = ({
   nextId,
 }) => {
   const [description, setDescription] = useState('');
-  const [complexity, setComplexity] = useState<ComplexityLevel>('Basic');
-  const [sourceDoc, setSourceDoc] = useState('MiFID II RTS 24 – Article 6');
+  const [sourceDoc, setSourceDoc] = useState('EMIR RTS 22 / MAS Notice 610');
   const [page, setPage] = useState('18');
   const [clause, setClause] = useState(
     '“Trading venues shall maintain records of order transmission parameters including participant timestamps.”'
@@ -32,7 +31,6 @@ export const NewRequestModal: React.FC<NewRequestModalProps> = ({
     const newRequest: ChangeRequest = {
       id: nextId,
       srNo: nextId,
-      complexity,
       description: description.trim(),
       status: 'In Progress',
       date: new Date().toLocaleDateString('en-GB', {
@@ -44,8 +42,15 @@ export const NewRequestModal: React.FC<NewRequestModalProps> = ({
       sourceDoc,
       page: parseInt(page, 10) || 1,
       relevantClause: clause.trim(),
-      impactExplanation: `Compliance evaluation initiated for proposed change in ${sourceDoc}. Jurisdictional impact pending final audit.`,
+      impactExplanation: `Compliance evaluation initiated for proposed change in ${sourceDoc}. Jurisdictional impact mapped across EMIR, UKEMIR, ASIC, MAS, and HKMA.`,
       recommendation: 'Evaluate cross-border reporting mapping before implementation.',
+      regulatoryImpacts: {
+        EMIR: 'YES',
+        UKEMIR: 'YES',
+        ASIC: 'NO',
+        MAS: 'YES',
+        HKMA: 'NO',
+      },
     };
 
     onSubmit(newRequest);
@@ -103,25 +108,22 @@ export const NewRequestModal: React.FC<NewRequestModalProps> = ({
             />
           </div>
 
-          <div className="grid grid-cols-2 gap-3">
-            <div>
+          <div className="grid grid-cols-3 gap-3">
+            <div className="col-span-2">
               <label className="block text-xs font-semibold text-slate-700 mb-1">
-                Complexity
+                Governing Regulation / Standard
               </label>
-              <select
-                value={complexity}
-                onChange={(e) => setComplexity(e.target.value as ComplexityLevel)}
+              <input
+                type="text"
+                value={sourceDoc}
+                onChange={(e) => setSourceDoc(e.target.value)}
                 className="w-full border border-slate-200 rounded-lg px-3 py-2 text-xs text-slate-800 focus:outline-hidden focus:border-blue-500"
-              >
-                <option value="Basic">Basic</option>
-                <option value="Medium">Medium</option>
-                <option value="Advanced">Advanced</option>
-              </select>
+              />
             </div>
 
             <div>
               <label className="block text-xs font-semibold text-slate-700 mb-1">
-                Source Document Page
+                Source Page
               </label>
               <input
                 type="number"
@@ -130,18 +132,6 @@ export const NewRequestModal: React.FC<NewRequestModalProps> = ({
                 className="w-full border border-slate-200 rounded-lg px-3 py-2 text-xs text-slate-800 focus:outline-hidden focus:border-blue-500"
               />
             </div>
-          </div>
-
-          <div>
-            <label className="block text-xs font-semibold text-slate-700 mb-1">
-              Governing Regulation / Standard
-            </label>
-            <input
-              type="text"
-              value={sourceDoc}
-              onChange={(e) => setSourceDoc(e.target.value)}
-              className="w-full border border-slate-200 rounded-lg px-3 py-2 text-xs text-slate-800 focus:outline-hidden focus:border-blue-500"
-            />
           </div>
 
           <div>
