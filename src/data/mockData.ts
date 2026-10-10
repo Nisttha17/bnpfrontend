@@ -1,4 +1,6 @@
-import { ChangeRequest, MetricSummary, AssessmentItem, JurisdictionMatrixRow } from '../types';
+import { ChangeRequest, MetricSummary, AssessmentItem, JurisdictionMatrixRow, Regulation, ViolationEvidence } from '../types';
+
+export const REGULATIONS: Regulation[] = ['EMIR', 'UKEMIR', 'ASIC', 'MAS', 'HKMA'];
 
 export const initialMetrics: MetricSummary = {
   totalChangeRequests: 24,
@@ -55,17 +57,17 @@ export const initialChangeRequests: ChangeRequest[] = [
     id: 'CR-001',
     srNo: 'CR-001',
     description: 'Update trade event timestamps',
-    status: 'Completed',
+    status: 'In Progress',
     date: '10 Oct 2026',
     fullDetails:
       'Update trade event timestamp fields to microsecond resolution for high-frequency algorithmic trade tracking and audit trail synchronization.',
-    sourceDoc: 'ESMA RTS 25 / ASIC CP 334 – Clause 4.2',
+    sourceDoc: 'ESMA RTS 25 / Article 12.3',
     page: 24,
     relevantClause:
       '“The trading venue shall ensure accurate ... timestamp of each trade lifecycle event with microsecond synchronization.”',
     impactExplanation:
-      'The proposed change impacts ASIC and MAS reporting rules; no impact on EMIR, UKEMIR, or HKMA reporting timelines.',
-    recommendation: 'Proceed with the change. Clear evidence mapped.',
+      'The proposed change fails synchronization standards under EMIR, UKEMIR, and HKMA reporting gateways.',
+    recommendation: 'Do Not Proceed.',
     regulatoryImpacts: {
       EMIR: 'NO',
       UKEMIR: 'NO',
@@ -87,8 +89,8 @@ export const initialChangeRequests: ChangeRequest[] = [
     relevantClause:
       '“Reporting entities must capture natural person identifiers and updated LEI validation status for all active counterparties.”',
     impactExplanation:
-      'Requires updated counterparty validation across ASIC, MAS, and HKMA regimes. No impact on EMIR or UKEMIR schemas.',
-    recommendation: 'Verify backward compatibility with regional gateway adapters before final deployment.',
+      'Requires updated counterparty validation across ASIC, MAS, and HKMA regimes. Non-compliant with EMIR and UKEMIR schemas.',
+    recommendation: 'Do Not Proceed.',
     regulatoryImpacts: {
       EMIR: 'NO',
       UKEMIR: 'NO',
@@ -110,8 +112,8 @@ export const initialChangeRequests: ChangeRequest[] = [
     relevantClause:
       '“Mandatory reporting fields updated to CPMI-IOSCO UPI and UTI standards across OTC derivative registries.”',
     impactExplanation:
-      'Direct impact on EMIR, UKEMIR, and MAS trade repository schemas. No impact on ASIC or HKMA.',
-    recommendation: 'Review downstream intermediary mapping and truncate excess padding where appropriate.',
+      'Direct conflict identified with ASIC and HKMA trade repository schema character limits.',
+    recommendation: 'Do Not Proceed.',
     regulatoryImpacts: {
       EMIR: 'YES',
       UKEMIR: 'YES',
@@ -133,8 +135,8 @@ export const initialChangeRequests: ChangeRequest[] = [
     relevantClause:
       '“Product classification must conform to CFI codes with additional bespoke OTC derivative categories.”',
     impactExplanation:
-      'Impacts UKEMIR, ASIC, and HKMA derivative taxonomies. No impact on EMIR or MAS.',
-    recommendation: 'Proceed with jurisdictional cross-mapping verification.',
+      'Violates EMIR and MAS derivative taxonomies due to unmapped product identifier prefixes.',
+    recommendation: 'Do Not Proceed.',
     regulatoryImpacts: {
       EMIR: 'NO',
       UKEMIR: 'YES',
@@ -147,7 +149,7 @@ export const initialChangeRequests: ChangeRequest[] = [
     id: 'CR-005',
     srNo: 'CR-005',
     description: 'Remove obsolete field',
-    status: 'Completed',
+    status: 'Pending',
     date: '06 Oct 2026',
     fullDetails:
       'Remove legacy clearing broker indicator flag decommissioned under regulatory reporting harmonization.',
@@ -156,8 +158,8 @@ export const initialChangeRequests: ChangeRequest[] = [
     relevantClause:
       '“Legacy clearing indicator flag decommissioned in favor of centralized clearing counterparty LEI.”',
     impactExplanation:
-      'Impacts EMIR and MAS feeds. No impact on UKEMIR, ASIC, or HKMA.',
-    recommendation: 'Decommissioning approved. Clear evidence provided.',
+      'Violates UKEMIR, ASIC, and HKMA feeds where clearing indicator remains mandatory.',
+    recommendation: 'Do Not Proceed.',
     regulatoryImpacts: {
       EMIR: 'YES',
       UKEMIR: 'NO',
@@ -179,8 +181,8 @@ export const initialChangeRequests: ChangeRequest[] = [
     relevantClause:
       '“Validation rules enforced at submission gateway rejecting non-compliant collateral valuation timestamps.”',
     impactExplanation:
-      'Impacts EMIR, UKEMIR, ASIC, and HKMA submission gateways. No impact on MAS.',
-    recommendation: 'Comprehensive test suite validation required prior to rollout.',
+      'Violates MAS submission gateway rules which prohibit strict gateway-level collateral rejections without grace period.',
+    recommendation: 'Do Not Proceed.',
     regulatoryImpacts: {
       EMIR: 'YES',
       UKEMIR: 'YES',
@@ -202,8 +204,8 @@ export const initialChangeRequests: ChangeRequest[] = [
     relevantClause:
       '“Settlement instruction messaging must provide standard SWIFT BIC and cash account identifier.”',
     impactExplanation:
-      'Impacts UKEMIR, MAS, and HKMA regimes. No impact on EMIR or ASIC.',
-    recommendation: 'Review settlement routing before finalizing implementation.',
+      'Triggers non-compliance under EMIR and ASIC messaging validation standards.',
+    recommendation: 'Do Not Proceed.',
     regulatoryImpacts: {
       EMIR: 'NO',
       UKEMIR: 'YES',
@@ -225,8 +227,8 @@ export const initialChangeRequests: ChangeRequest[] = [
     relevantClause:
       '“Commodity derivative and index derivatives classified under mandatory reportable transaction scope.”',
     impactExplanation:
-      'Impacts EMIR and ASIC reporting pipelines. No impact on UKEMIR, MAS, or HKMA.',
-    recommendation: 'Scope alignment verified for designated asset sub-classes.',
+      'Violates UKEMIR, MAS, and HKMA asset definitions for unregistered digital and environmental derivatives.',
+    recommendation: 'Do Not Proceed.',
     regulatoryImpacts: {
       EMIR: 'YES',
       UKEMIR: 'NO',
@@ -235,51 +237,135 @@ export const initialChangeRequests: ChangeRequest[] = [
       HKMA: 'NO',
     },
   },
+  {
+    id: 'CR-009',
+    srNo: 'CR-009',
+    description: 'Routine schema metadata documentation update',
+    status: 'Completed',
+    date: '02 Oct 2026',
+    fullDetails:
+      'Non-functional documentation comments and metadata description updates for reporting gateways.',
+    sourceDoc: 'Global ISO 20022 Schema Guidelines',
+    page: 10,
+    relevantClause:
+      '“Informational comments in schema XML/JSON definitions do not affect field processing parity.”',
+    impactExplanation:
+      'No regulatory impact. Zero violations across all global reporting jurisdictions.',
+    recommendation: 'Proceed with the change.',
+    regulatoryImpacts: {
+      EMIR: 'YES',
+      UKEMIR: 'YES',
+      ASIC: 'YES',
+      MAS: 'YES',
+      HKMA: 'YES',
+    },
+  },
 ];
+
+export const REGULATION_EVIDENCE_MAP: Record<Regulation, {
+  document: string;
+  clause: string;
+  page: number;
+  quote: string;
+  impactTemplate: (crId: string, desc: string) => string;
+}> = {
+  EMIR: {
+    document: 'ESMA RTS 22 / EMIR Refit – Article 9.1',
+    clause: '“Mandatory Reporting & Field Format Alignment”',
+    page: 24,
+    quote: '“Counterparties and CCPs shall ensure that the details of any derivative contract are reported without duplication, conforming strictly to the prescribed technical XML schema format.”',
+    impactTemplate: (crId, desc) =>
+      `Proposed change (${crId}: ${desc}) alters mandatory reporting fields, creating schema validation failures and reconciliation mismatches in EMIR trade repositories.`
+  },
+  UKEMIR: {
+    document: 'Bank of England & FCA Policy Statement PS23/2',
+    clause: '“Annex B – Trade State & Clock Traceability”',
+    page: 18,
+    quote: '“Reporting entities must adhere to Bank of England validation rules and clock synchronization tolerances. Non-conforming payloads shall be rejected at the gateway.”',
+    impactTemplate: (crId, desc) =>
+      `Fails UK EMIR post-Brexit bilateral reconciliation rules. Downstream UK trade repository gateways will reject modified messages for ${crId}.`
+  },
+  ASIC: {
+    document: 'ASIC Derivative Transaction Rules (Reporting) 2024',
+    clause: '“Rule 2.2.8 – Record Keeping & Unique Identifiers”',
+    page: 41,
+    quote: '“Reporting entities shall maintain synchronous timestamps and adhere to designated UTI/UPI character length limits without unauthorized custom field truncations.”',
+    impactTemplate: (crId, desc) =>
+      `Conflicts with ASIC transaction reporting standards. Field structure changes in ${crId} breach character length and validation guidelines.`
+  },
+  MAS: {
+    document: 'MAS Notice 610 / Securities & Futures Regulations',
+    clause: '“Regulation 7 – Derivative Contracts Verification”',
+    page: 32,
+    quote: '“Specified persons shall submit verified counterparty LEI and execution timestamp data within prescribed T+1 reporting deadlines with exact jurisdictional classification.”',
+    impactTemplate: (crId, desc) =>
+      `Violates MAS reporting accuracy thresholds and field taxonomy rules. Counterparty mapping is non-compliant for ${crId}.`
+  },
+  HKMA: {
+    document: 'HKMA Supplementary Guidance on OTC Derivatives Reporting',
+    clause: '“Section 3.4 – Mandatory Clearing & Intermediary Mapping”',
+    page: 55,
+    quote: '“Reporting entities must ensure full consistency in trade party classification according to HKMA trade repository validation filters.”',
+    impactTemplate: (crId, desc) =>
+      `Non-compliant with HKMA TR format validation filters and trade categorization rules for proposed change (${crId}).`
+  }
+};
+
+export function getViolationEvidence(cr: ChangeRequest, reg: Regulation): ViolationEvidence {
+  const base = REGULATION_EVIDENCE_MAP[reg];
+  return {
+    regulation: reg,
+    document: base.document,
+    clause: base.clause,
+    page: base.page,
+    quote: base.quote,
+    impact: base.impactTemplate(cr.srNo, cr.description),
+  };
+}
 
 export const initialAssessments: AssessmentItem[] = [
   {
     id: 'ASM-101',
     dateTime: '10 Oct 2026, 10:24 AM',
     requestId: 'CR-001',
-    status: 'Completed',
-    summary: '2 regulations impacted (ASIC, MAS). Evidence verified.',
+    status: 'In Progress',
+    summary: '3 regulations violated (EMIR, UKEMIR, HKMA). Do Not Proceed.',
   },
   {
     id: 'ASM-102',
     dateTime: '09 Oct 2026, 06:18 PM',
     requestId: 'CR-002',
     status: 'In Progress',
-    summary: '3 regulations impacted (ASIC, MAS, HKMA).',
+    summary: '2 regulations violated (EMIR, UKEMIR). Do Not Proceed.',
   },
   {
     id: 'ASM-103',
     dateTime: '08 Oct 2026, 03:12 PM',
     requestId: 'CR-003',
     status: 'Needs Review',
-    summary: '3 regulations impacted (EMIR, UKEMIR, MAS).',
+    summary: '2 regulations violated (ASIC, HKMA). Do Not Proceed.',
   },
   {
     id: 'ASM-104',
     dateTime: '07 Oct 2026, 11:45 AM',
     requestId: 'CR-006',
-    status: 'Pending',
-    summary: 'Broad gateway impact across 4 regulations.',
+    status: 'Needs Review',
+    summary: '1 regulation violated (MAS). Do Not Proceed.',
   },
 ];
 
 export const mockNotifications = [
   {
     id: 'notif-1',
-    title: 'Assessment Complete for CR-001',
-    description: 'Evaluated against EMIR, UKEMIR, ASIC, MAS, HKMA. ASIC and MAS impacted.',
+    title: 'Violations Flagged: CR-001',
+    description: 'Evaluated against EMIR, UKEMIR, ASIC, MAS, HKMA. 3 violations identified.',
     time: '15 mins ago',
     unread: true,
   },
   {
     id: 'notif-2',
     title: 'Heatmap Impact Triggered: CR-006',
-    description: 'CR-006 affects 4 regulatory reporting frameworks including EMIR and HKMA.',
+    description: 'CR-006 violates MAS reporting guidelines. Evidence panel loaded.',
     time: '2 hours ago',
     unread: true,
   },

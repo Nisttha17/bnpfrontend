@@ -2,6 +2,7 @@ export type ComplexityLevel = 'Basic' | 'Medium' | 'Advanced';
 export type RequestStatus = 'Completed' | 'In Progress' | 'Pending' | 'Needs Review' | 'Rejected';
 export type ComplianceStatus = 'Conflict' | 'Review' | 'Clear';
 export type ImpactDecision = 'YES' | 'NO';
+export type Regulation = 'EMIR' | 'UKEMIR' | 'ASIC' | 'MAS' | 'HKMA';
 
 export interface RegulatoryImpactMap {
   EMIR: ImpactDecision;
@@ -9,6 +10,15 @@ export interface RegulatoryImpactMap {
   ASIC: ImpactDecision;
   MAS: ImpactDecision;
   HKMA: ImpactDecision;
+}
+
+export interface ViolationEvidence {
+  regulation: Regulation;
+  document: string;
+  clause: string;
+  page: number;
+  quote: string;
+  impact: string;
 }
 
 export interface ChangeRequest {

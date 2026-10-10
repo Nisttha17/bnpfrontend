@@ -1,25 +1,31 @@
 import React from 'react';
-import { ChangeRequest } from '../types';
+import { ChangeRequest, Regulation } from '../types';
+import { REGULATIONS } from '../data/mockData';
+import { CheckCircle2 } from 'lucide-react';
 
 interface ImpactMatrixProps {
   requests: ChangeRequest[];
-  selectedRequestId: string;
+  selectedRequestId: string | null;
+  activeViolation: Regulation | null;
   onSelectRequest: (request: ChangeRequest) => void;
-  onSelectCellRegulation?: (request: ChangeRequest, regulation: string) => void;
+  onSelectViolationCell: (request: ChangeRequest, regulation: Regulation) => void;
 }
 
 export const ImpactMatrix: React.FC<ImpactMatrixProps> = ({
   requests,
   selectedRequestId,
+  activeViolation,
   onSelectRequest,
+  onSelectViolationCell,
 }) => {
-  const regulations: Array<'EMIR' | 'UKEMIR' | 'ASIC' | 'MAS' | 'HKMA'> = [
-    'EMIR',
-    'UKEMIR',
-    'ASIC',
-    'MAS',
-    'HKMA',
-  ];
+  // Find selected request
+  const selectedCr = requests.find((r) => r.id === selectedRequestId) || null;
+
+  // Determine if selected request has zero violations (all YES)
+  const selectedCrViolations = selectedCr
+    ? REGULATIONS.filter((reg) => selectedCr.regulatoryImpacts?.[reg] === 'NO')
+    : [];
+  const hasNoViolations = selectedCr !== null && selectedCrViolations.length === 0;
 
   return (
     <div className="bg-white rounded-2xl border border-slate-200/80 shadow-xs p-5 sm:p-6 mb-6">
@@ -78,7 +84,8 @@ export const ImpactMatrix: React.FC<ImpactMatrixProps> = ({
           </thead>
           <tbody>
             {requests.map((req) => {
-              const isSelected = req.id === selectedRequestId;
+              const isSelected = selectedRequestId !== null && req.id === selectedRequestId;
+
               return (
                 <tr
                   key={req.id}
@@ -101,9 +108,11 @@ export const ImpactMatrix: React.FC<ImpactMatrixProps> = ({
                   </td>
 
                   {/* Regulation YES / NO Cells */}
-                  {regulations.map((reg) => {
+                  {REGULATIONS.map((reg) => {
                     const impact = req.regulatoryImpacts?.[reg] || 'NO';
                     const isYes = impact === 'YES';
+                    const isCellActiveViolation =
+                      isSelected && !isYes && activeViolation === reg;
 
                     return (
                       <td key={reg} className="p-0.5 text-center">
@@ -111,13 +120,24 @@ export const ImpactMatrix: React.FC<ImpactMatrixProps> = ({
                           type="button"
                           onClick={(e) => {
                             e.stopPropagation();
-                            onSelectRequest(req);
+                            if (!isYes) {
+                              // Clicking a red (NO) cell selects this CR and switches active violation
+                              onSelectViolationCell(req, reg);
+                            }
+                            // Clicking green (YES) cell does not open panel as per Requirement 8
                           }}
-                          className={`w-full py-2.5 sm:py-3 px-2 rounded-xl font-bold text-xs tracking-wider transition-transform hover:scale-[1.02] cursor-pointer text-center block ${
+                          className={`w-full py-2.5 sm:py-3 px-2 rounded-xl font-bold text-xs tracking-wider transition-all cursor-pointer text-center block ${
                             isYes
-                              ? 'bg-[#d1fae5] text-[#065f46] border border-emerald-200/60'
-                              : 'bg-[#fee2e2] text-[#991b1b] border border-red-200/60'
+                              ? 'bg-[#d1fae5] text-[#065f46] border border-emerald-200/60 hover:bg-[#c2f3d9]'
+                              : isCellActiveViolation
+                              ? 'bg-[#fee2e2] text-[#991b1b] border-2 border-red-500 ring-2 ring-red-400/50 shadow-sm scale-[1.03]'
+                              : 'bg-[#fee2e2] text-[#991b1b] border border-red-200/60 hover:border-red-400 hover:scale-[1.02]'
                           }`}
+                          title={
+                            isYes
+                              ? `${reg}: Compliant (No violation)`
+                              : `${reg}: Violation (Click to inspect evidence)`
+                          }
                         >
                           {impact}
                         </button>
@@ -130,6 +150,14 @@ export const ImpactMatrix: React.FC<ImpactMatrixProps> = ({
           </tbody>
         </table>
       </div>
+
+      {/* Message when selected CR has all YES (0 violations) */}
+      {hasNoViolations && (
+        <div className="mt-4 p-3 bg-emerald-50 border border-emerald-200 rounded-xl text-xs font-semibold text-emerald-800 flex items-center gap-2.5 animate-fadeIn">
+          <CheckCircle2 className="w-4 h-4 text-emerald-600 shrink-0" />
+          <span>No violations found for {selectedCr?.srNo}</span>
+        </div>
+      )}
 
       {/* Footer Note matching reference image */}
       <p className="text-xs italic text-slate-400 mt-4 font-normal">

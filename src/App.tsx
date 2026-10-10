@@ -21,8 +21,9 @@ import {
   initialChangeRequests,
   initialAssessments,
   mockNotifications,
+  REGULATIONS,
 } from './data/mockData';
-import { ChangeRequest, MetricSummary, AssessmentItem } from './types';
+import { ChangeRequest, MetricSummary, AssessmentItem, Regulation } from './types';
 import { Menu, CheckCircle2 } from 'lucide-react';
 
 export default function App() {
@@ -36,18 +37,20 @@ export default function App() {
   const [assessments, setAssessments] = useState<AssessmentItem[]>(initialAssessments);
   const [notifications, setNotifications] = useState(mockNotifications);
 
-  // Selection & Filter States
-  const [selectedRequestId, setSelectedRequestId] = useState<string>('CR-001');
+  // Minimal CR Selection & Active Violation States (Initial state: no CR selected)
+  const [selectedCrId, setSelectedCrId] = useState<string | null>(null);
+  const [activeViolation, setActiveViolation] = useState<Regulation | null>(null);
+  const [isPanelDismissed, setIsPanelDismissed] = useState<boolean>(false);
+
   const [searchTerm, setSearchTerm] = useState<string>('');
 
-  // Modals & Panel States
+  // Modals States
   const [isNewModalOpen, setIsNewModalOpen] = useState<boolean>(false);
   const [isAssessmentModalOpen, setIsAssessmentModalOpen] = useState<boolean>(false);
   const [isPdfModalOpen, setIsPdfModalOpen] = useState<boolean>(false);
   const [isNotificationsOpen, setIsNotificationsOpen] = useState<boolean>(false);
-  const [isEvidencePanelVisible, setIsEvidencePanelVisible] = useState<boolean>(true);
   const [pdfDocData, setPdfDocData] = useState<{ title: string; page: number }>({
-    title: 'ESMA RTS 25 / ASIC CP 334 – Clause 4.2',
+    title: 'ESMA RTS 22 / EMIR Refit – Article 9.1',
     page: 24,
   });
 
@@ -61,10 +64,28 @@ export default function App() {
     }, 4000);
   };
 
-  // Find currently selected request
-  const selectedRequest = useMemo(() => {
-    return requests.find((r) => r.id === selectedRequestId) || requests[0];
-  }, [requests, selectedRequestId]);
+  // Derive selected CR object
+  const selectedCr = useMemo(() => {
+    if (!selectedCrId) return null;
+    return requests.find((r) => r.id === selectedCrId) || null;
+  }, [requests, selectedCrId]);
+
+  // Derive violations for selected CR (cells whose status is "NO")
+  const violations = useMemo<Regulation[]>(() => {
+    if (!selectedCr || !selectedCr.regulatoryImpacts) return [];
+    return REGULATIONS.filter((reg) => selectedCr.regulatoryImpacts?.[reg] === 'NO');
+  }, [selectedCr]);
+
+  // Derive whether Evidence panel should be rendered
+  const showPanel = Boolean(selectedCr && violations.length > 0 && !isPanelDismissed);
+
+  // Derive effective active violation regulation (defaults to first violated regulation)
+  const effectiveActiveViolation: Regulation = useMemo(() => {
+    if (activeViolation && violations.includes(activeViolation)) {
+      return activeViolation;
+    }
+    return violations[0] || 'EMIR';
+  }, [activeViolation, violations]);
 
   // Filter requests based on search
   const filteredRequests = useMemo(() => {
@@ -76,10 +97,23 @@ export default function App() {
     });
   }, [requests, searchTerm]);
 
-  // Handler: Selecting a Change Request
+  // Handler: Selecting a Change Request row
   const handleSelectRequest = (request: ChangeRequest) => {
-    setSelectedRequestId(request.id);
-    setIsEvidencePanelVisible(true);
+    setSelectedCrId(request.id);
+    setIsPanelDismissed(false);
+
+    // Reset active violation to this CR's first violated regulation
+    const reqViolations = REGULATIONS.filter(
+      (reg) => request.regulatoryImpacts?.[reg] === 'NO'
+    );
+    setActiveViolation(reqViolations[0] || null);
+  };
+
+  // Handler: Clicking a red (NO) cell in a row
+  const handleSelectViolationCell = (request: ChangeRequest, regulation: Regulation) => {
+    setSelectedCrId(request.id);
+    setIsPanelDismissed(false);
+    setActiveViolation(regulation);
   };
 
   // Handler: Approve Request
@@ -90,7 +124,7 @@ export default function App() {
           ? {
               ...r,
               status: 'Completed',
-              recommendation: 'Approved by Analyst. Regulatory impact verified across EMIR, UKEMIR, ASIC, MAS, HKMA.',
+              recommendation: 'Analyst override recorded. Implementation proceeding.',
             }
           : r
       )
@@ -108,7 +142,7 @@ export default function App() {
         }),
         requestId: reqId,
         status: 'Completed',
-        summary: 'Analyst approval recorded. Verified against cross-border reporting rules.',
+        summary: 'Analyst manual override recorded.',
       },
       ...prev,
     ]);
@@ -118,7 +152,7 @@ export default function App() {
       needsHumanReview: Math.max(0, prev.needsHumanReview - 1),
     }));
 
-    showToast(`✓ Request ${reqId} has been successfully approved and marked Completed.`);
+    showToast(`✓ Request ${reqId} has been manually approved.`);
   };
 
   // Handler: Reject / Do Not Proceed
@@ -129,25 +163,32 @@ export default function App() {
           ? {
               ...r,
               status: 'Needs Review',
-              recommendation: 'Returned to author: Conflicts flagged across target jurisdictions.',
+              recommendation: 'Do Not Proceed: Violations flagged across target regulations.',
             }
           : r
       )
     );
 
-    showToast(`Status updated: ${reqId} set to Needs Review.`);
+    showToast(`Status updated: ${reqId} marked as Do Not Proceed.`);
   };
 
-  // Handler: Add New Request (Complexity-free)
+  // Handler: Add New Request
   const handleAddRequest = (newReq: ChangeRequest) => {
     setRequests((prev) => [newReq, ...prev]);
-    setSelectedRequestId(newReq.id);
+    setSelectedCrId(newReq.id);
+    setIsPanelDismissed(false);
+
+    const reqViolations = REGULATIONS.filter(
+      (reg) => newReq.regulatoryImpacts?.[reg] === 'NO'
+    );
+    setActiveViolation(reqViolations[0] || null);
+
     setMetrics((prev) => ({
       ...prev,
       totalChangeRequests: prev.totalChangeRequests + 1,
       needsHumanReview: prev.needsHumanReview + 1,
     }));
-    showToast(`New change request ${newReq.id} created and mapped to Regulatory Impact Heatmap.`);
+    showToast(`New change request ${newReq.id} created and evaluated.`);
   };
 
   // Handler: Run Assessment Complete
@@ -163,8 +204,8 @@ export default function App() {
           minute: '2-digit',
         }),
         requestId: reqId,
-        status: 'Completed',
-        summary: 'Automated 5-regime scan completed (EMIR, UKEMIR, ASIC, MAS, HKMA).',
+        status: 'Needs Review',
+        summary: 'Automated 5-regime scan completed. Heatmap violations mapped.',
       },
       ...prev,
     ]);
@@ -259,28 +300,36 @@ export default function App() {
             <div className="space-y-6 animate-fadeIn">
               <ImpactMatrix
                 requests={requests}
-                selectedRequestId={selectedRequestId}
+                selectedRequestId={selectedCrId}
+                activeViolation={effectiveActiveViolation}
                 onSelectRequest={handleSelectRequest}
+                onSelectViolationCell={handleSelectViolationCell}
               />
-              {/* Evidence Panel below in full matrix view */}
-              <div className="max-w-2xl">
-                <EvidencePanel
-                  request={selectedRequest}
-                  onApprove={handleApproveRequest}
-                  onReject={handleRejectRequest}
-                  onOpenPdf={handleOpenPdf}
-                />
-              </div>
+              {/* Evidence Panel below if there are violations */}
+              {showPanel && selectedCr && (
+                <div className="max-w-2xl">
+                  <EvidencePanel
+                    request={selectedCr}
+                    violations={violations}
+                    activeViolation={effectiveActiveViolation}
+                    onSelectViolation={(reg) => setActiveViolation(reg)}
+                    onApprove={handleApproveRequest}
+                    onReject={handleRejectRequest}
+                    onOpenPdf={handleOpenPdf}
+                    onClose={() => setIsPanelDismissed(true)}
+                  />
+                </div>
+              )}
             </div>
           ) : (
             <>
               {/* 1. Summary Metric Cards Row */}
               <SummaryCards metrics={metrics} />
 
-              {/* 2. Change Requests Table (Complexity Removed) */}
+              {/* 2. Change Requests Table */}
               <ChangeRequestsTable
                 requests={filteredRequests}
-                selectedRequestId={selectedRequestId}
+                selectedRequestId={selectedCrId}
                 onSelectRequest={handleSelectRequest}
                 onOpenNewModal={() => setIsNewModalOpen(true)}
                 searchTerm={searchTerm}
@@ -289,17 +338,19 @@ export default function App() {
 
               {/* 3. Bottom Section: Regulatory Impact Heatmap + Recent Assessments + Evidence Panel */}
               <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
-                {/* Left Column (approx 8 columns on large screens) */}
+                {/* Left Column (dynamically full-width if panel not shown) */}
                 <div
                   className={`${
-                    isEvidencePanelVisible ? 'lg:col-span-8' : 'lg:col-span-12'
+                    showPanel ? 'lg:col-span-8' : 'lg:col-span-12'
                   } space-y-6`}
                 >
-                  {/* Updated Regulatory Impact Heatmap matching reference image */}
+                  {/* Regulatory Impact Heatmap */}
                   <ImpactMatrix
                     requests={requests}
-                    selectedRequestId={selectedRequestId}
+                    selectedRequestId={selectedCrId}
+                    activeViolation={effectiveActiveViolation}
                     onSelectRequest={handleSelectRequest}
+                    onSelectViolationCell={handleSelectViolationCell}
                   />
 
                   {/* Recent Assessments */}
@@ -313,31 +364,22 @@ export default function App() {
                   />
                 </div>
 
-                {/* Right Column: Evidence & Recommendations Panel */}
-                {isEvidencePanelVisible && (
+                {/* Right Column: Evidence & Recommendations Panel (rendered ONLY when showPanel is true) */}
+                {showPanel && selectedCr && (
                   <div className="lg:col-span-4 h-full sticky top-4">
                     <EvidencePanel
-                      request={selectedRequest}
+                      request={selectedCr}
+                      violations={violations}
+                      activeViolation={effectiveActiveViolation}
+                      onSelectViolation={(reg) => setActiveViolation(reg)}
                       onApprove={handleApproveRequest}
                       onReject={handleRejectRequest}
                       onOpenPdf={handleOpenPdf}
-                      onClose={() => setIsEvidencePanelVisible(false)}
+                      onClose={() => setIsPanelDismissed(true)}
                     />
                   </div>
                 )}
               </div>
-
-              {/* Restore Evidence Panel Banner if closed */}
-              {!isEvidencePanelVisible && (
-                <div className="mt-4 flex justify-end">
-                  <button
-                    onClick={() => setIsEvidencePanelVisible(true)}
-                    className="text-xs font-semibold text-blue-700 bg-blue-50 border border-blue-200 px-3.5 py-1.5 rounded-lg hover:bg-blue-100 transition-colors cursor-pointer"
-                  >
-                    Open Evidence & Recommendations Panel
-                  </button>
-                </div>
-              )}
             </>
           )}
         </div>
@@ -354,7 +396,7 @@ export default function App() {
       <RunAssessmentModal
         isOpen={isAssessmentModalOpen}
         onClose={() => setIsAssessmentModalOpen(false)}
-        selectedRequest={selectedRequest}
+        selectedRequest={selectedCr || requests[0]}
         onAssessmentComplete={handleAssessmentComplete}
       />
 

@@ -4,7 +4,7 @@ import { ChangeRequest } from '../types';
 
 interface ChangeRequestsTableProps {
   requests: ChangeRequest[];
-  selectedRequestId: string;
+  selectedRequestId: string | null;
   onSelectRequest: (request: ChangeRequest) => void;
   onOpenNewModal: () => void;
   searchTerm: string;
